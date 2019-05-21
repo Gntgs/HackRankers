@@ -20,6 +20,7 @@ using namespace std;
 typedef struct node
 {
     int val;
+    float key;
     struct node* left;
     struct node* right;
     int ht;
@@ -42,6 +43,8 @@ node** getPreMaxNode(node** root);
 int isLeaf(node* root);
 int fixChildCount(node* root);
 int getMid(node* root);
+
+std::map<int,int> cntCache;
 node** getNode(node** root,int data);
 node * insert(node * root,int val)
 {
@@ -50,10 +53,16 @@ node * insert(node * root,int val)
     nd->left = 0;
     nd->right = 0;
     nd->ht = 0;
+    int dupC = cntCache[val] ? cntCache[val] : 0;
+    if (dupC == 0) {
+        nd->key = val;
+    }else {
+        nd->key = val + (1.0/(dupC+1));
+    }
+    cntCache[val] = dupC + 1;
     root = justInsert(root,nd);
     fixHeight(root);
     node* rt = fixTree(root,0,false);
-    fixHeight(rt);
     return rt;
     
 }
@@ -67,12 +76,12 @@ node* justInsert(node* root,node* nd)
     node* tg = 0;
     int isleft = 0;
     while (cd) {
-        int val = nd->val;
-        if (val < cd->val) {
+        float val = nd->key;
+        if (val < cd->key) {
             tg = cd;
             isleft = 1;
             cd = cd->left;
-        }else if(val > cd->val) {
+        }else if(val > cd->key) {
             tg = cd;
             isleft = 0;
             cd = cd->right;
@@ -234,24 +243,29 @@ void deleteNode(node** root,int data)
     if ((*target)->left && (*target)->right) {
         node** re = getNextMinNode(target);
         (*target)->val = (*re)->val;
+        (*target)->key = (*re)->key;
         deleteNode(re,(*re)->val);
     }else if ((*target)->left) {
         if (isLeaf((*target)->left)) {
             (*target)->val = (*target)->left->val;
+            (*target)->key = (*target)->left->key;
             deleteNode(&((*target)->left),(*target)->left->val);
         }else {
             node** re = getPreMaxNode(&((*target)->left));
             (*target)->val = (*re)->val;
+            (*target)->key = (*re)->key;
             deleteNode(re,(*re)->val);
         }
         
     }else if ((*target)->right) {
         if (isLeaf((*target)->right)) {
             (*target)->val = (*target)->right->val;
+            (*target)->key = (*target)->right->key;
             deleteNode(&((*target)->right),(*target)->right->val);
         }else {
             node** re = getNextMinNode(&((*target)->right));
             (*target)->val = (*re)->val;
+            (*target)->key = (*re)->key;
             deleteNode(re,(*re)->val);
         }
     }else {
@@ -348,39 +362,41 @@ int getMid(node* root){
 
 void opera(node** root,char op,int data)
 {
-	if (op == 'r') {
-		deleteNode(root,data);
-	}else if(op == 'a') {
-		*root = insert(*root,data);
-	}
+    if (op == 'r') {
+        deleteNode(root,data);
+    }else if(op == 'a') {
+        *root = insert(*root,data);
+    }
 }
 
 void median(vector<char> s,vector<int> X) {
-   node* root = 0;
-   for (int i = 0; i < s.size(); i++)
-   {
-   		opera(&root,s[i],X[i]);
-   		getMid(root);
-   }
+    node* root = 0;
+    for (int i = 0; i < s.size(); i++)
+    {
+        opera(&root,s[i],X[i]);
+        getMid(root);
+    }
     
 }
 int main(void){
-
-//Helpers for input and output
-
-	int N;
-	cin >> N;
-	
-	vector<char> s;
+    
+    //Helpers for input and output
+    
+    int N;
+    cin >> N;
+    
+    vector<char> s;
     vector<int> X;
-	char temp;
+    char temp;
     int tempint;
-	for(int i = 0; i < N; i++){
-		cin >> temp >> tempint;
-        s.push_back(temp);
-        X.push_back(tempint);
-	}
-	
-	median(s,X);
-	return 0;
+     for(int i = 0; i < N; i++){
+         //cin >> temp >> tempint;
+     		temp = 'a';
+     		tempint = i;
+            s.push_back(temp);
+            X.push_back(tempint);
+     }
+    
+    median(s,X);
+    return 0;
 }
