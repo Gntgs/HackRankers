@@ -8,8 +8,10 @@ namespace Tree{
 	public:
 		AVLTree();
 		void Insert(T data);
-		void Remove(T data);
-
+		bool Remove(T data);
+		int  GetSize();
+		T    GetMax();
+		T    GetMin();
 	protected:
 		struct Node{
 			int height;
@@ -31,12 +33,15 @@ namespace Tree{
 		Node* GetNextMinNode(Node* root);
 	private:
 		Node* root;
-		//std::vector<Node*> m_items;
+		bool  isDel;
+		int   size;
 	};
 	
 	template<class T>
 	AVLTree<T>::AVLTree(){
-        root = NULL;
+        root  = NULL;
+        size  = 0;
+        isDel = false;
 	}
 	template<class T>
 	typename AVLTree<T>::Node* AVLTree<T>::GetRoot()
@@ -47,14 +52,42 @@ namespace Tree{
 	template<class T>
 	void AVLTree<T>::Insert(T data)
 	{
-		Node* nd = GetNode(data);
-		if (nd) {
-			return;
-		}
-		nd = CreateNode(data);
+		Node* nd = CreateNode(data);
 		root = Insert(root,nd);
+		size += 1;
 	}
 
+	template<class T>
+	T  AVLTree<T>::GetMax(){
+		if (!root) {
+			return NULL;
+		}
+
+		Node* rt = root;
+		while(rt->right) {
+			rt = rt->right;
+		}
+		return rt->data;
+	}
+
+	template<class T>
+	T  AVLTree<T>::GetMin(){
+		if (!root) {
+			return NULL;
+		}
+
+		Node* rt = root;
+		while(rt->left) {
+			rt = rt->left;
+		}
+		return rt->data;
+	}
+
+	template<class T>
+	int  AVLTree<T>::GetSize()
+	{
+		return size;
+	}
 
 
 	template<class T>
@@ -83,29 +116,20 @@ namespace Tree{
 			root->right = Insert(root->right,nd);
 			if (HEIGHT(root->right) - HEIGHT(root->left) == 2) {
 				if (nd->data < root->right->data) {
-					// RL
-					RL(root);
-					return RR(root);
+					return RL(root);
 				}else {
-					// RR
 					return RR(root);
 				}
 			}
-		}else if (root->data > nd->data) {
+		}else if (root->data >= nd->data) {
 			root->left = Insert(root->left,nd);
 			if (HEIGHT(root->left) - HEIGHT(root->right) == 2) {
 				if (nd->data > root->left->data) {
-					// LR
-					LR(root);
-					return LL(root);
-					
+					return LR(root);
 				}else {
-					// LL
 					return LL(root);
 				}
 			}
-		}else {
-			//相同
 		}
 		root->height = MAX( HEIGHT(root->left), HEIGHT(root->right)) + 1;
 		return root;
@@ -128,15 +152,8 @@ namespace Tree{
 	template<class T>
 	typename AVLTree<T>::Node* AVLTree<T>::RL(Node* root)
 	{
-		Node* r = root->right;
-	    Node* rl = r->left;
-	    root->right = rl;
-	    r->left = rl->right;
-	    rl->right = r;
-	
-	    r->height = MAX(HEIGHT(r->left),HEIGHT(r->right)) + 1;
-	    rl->height = MAX(HEIGHT(rl->left),HEIGHT(r)) + 1;
-	    return root;
+		root->right = LL(root->right);
+	    return RR(root);
 	}
 	
 	template<class T>
@@ -157,16 +174,8 @@ namespace Tree{
 	template<class T>
 	typename AVLTree<T>::Node* AVLTree<T>::LR(Node* root)
 	{
-		Node* l = root->left;
-	    Node* lr = l->right;
-	
-	    root->left = lr;
-	    l->right = lr->left;
-	    lr->left = l;
-	
-	    l->height = MAX(HEIGHT(l->left),HEIGHT(l->right)) + 1;
-	    lr->height = MAX(HEIGHT(l),HEIGHT(lr->right)) + 1;
-	    return root;
+		root->left = RR(root->left);
+		return LL(root);
 	}
 	
 	template<class T>
@@ -224,17 +233,23 @@ namespace Tree{
 	
 	#define ISLEAF(nd) !((nd)->left)&&!((nd)->right)
 	template<class T>
-	void AVLTree<T>::Remove(T data)
+	bool AVLTree<T>::Remove(T data)
 	{
 		Node tg;
 		tg.data = data;
+		isDel = true;
 		root = Remove(root,&tg);
+		if (isDel) {
+			size-=1;
+		}
+		return isDel; 
 	}
 	
 	template<class T>
 	typename AVLTree<T>::Node* AVLTree<T>::Remove(Node* root,Node* target)
 	{
 		if (!root) {
+			isDel = false;
 			return NULL;
 		}
 	
@@ -246,17 +261,15 @@ namespace Tree{
 					//LL
 					return LL(root);
 				}else {
-					LR(root);
-					return LL(root);
+					return LR(root);
 				}
 			}
 		}else if (root->data > target->data) {
 			root->left = Remove(root->left,target);
-			if (HEIGHT(root->right) - HEIGHT(root->left) == 2) {
+			if (HEIGHT(root->right) - HEIGHT(root->left) == 2 ) {
 				Node* r = root->right;
 				if (HEIGHT(r->left) > HEIGHT(r->right)) {
-					RL(root);
-					return RR(root);
+					return RL(root);
 				}else {
 					return RR(root);
 				}
@@ -273,21 +286,13 @@ namespace Tree{
 					root->right = Remove(root->right,re);
 				}
 			}else {
-				if (root->left) {
-					CPNODE(root,root->left);
-					delete root->left;
-					root->left = NULL;
-				}else if(root->right) {
-					CPNODE(root,root->right);
-					delete root->right;
-					root->right = NULL;
-				}else {
-					delete root;
-					root = NULL;
-				}
+                Node* nd = root;
+                root = root->left?root->left:root->right;
+                delete nd;
 			}
 		}
-	
+        if (root)
+        root->height = MAX( HEIGHT(root->left), HEIGHT(root->right)) + 1;
 		return root;
 	}
 
