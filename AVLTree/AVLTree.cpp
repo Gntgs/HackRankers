@@ -46,24 +46,13 @@ void median(vector<char> s,vector<int> X) {
         	if (tree_min.GetSize() ==  tree_max.GetSize()) {
                	double res = ((double)tree_min.GetMax() + tree_max.GetMin())/2.0;
                 if ( int(res) == res) {
-                	//std::cout << "iii_f";
-                	// std::cout.flags(f);
-                	//std::cout.precision(0);
                 	printf("%.lf\n",res);
-                    //std::cout << std::fixed<< res << std::endl;
                 }else {
-                	//std::cout << "fff";
-                	//std::cout << "ooo "<<int(res)<<" "<<res << " "<<int(res) - res << " ";
-                	//std::cout.precision(1);
-                    //std::cout<< std::fixed <<res <<std::endl;
                     printf("%0.1lf\n",res);
                 }
                 
             }else {
-            	//std::cout << "iii_i";
                 double res = tree_min.GetSize() > tree_max.GetSize() ? tree_min.GetMax() : tree_max.GetMin();
-                //std::cout.precision(0);
-                //std::cout << std::fixed<< res << std::endl;
                 printf("%0.lf\n",res);
             }
         }

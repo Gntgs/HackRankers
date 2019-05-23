@@ -1,382 +1,60 @@
-#include <map>
-#include <set>
-#include <list>
-#include <cmath>
-#include <ctime>
-#include <deque>
-#include <queue>
-#include <stack>
-#include <bitset>
-#include <cstdio>
-#include <limits>
-#include <vector>
-#include <cstdlib>
-#include <numeric>
-#include <sstream>
-#include <iostream>
-#include <algorithm>
+#include "AVLTree/AVLTree.h"
+#include "AVLTree/TreeUtils.h"
 using namespace std;
-/* Head ends here */
-typedef struct node
-{
-    int val;
-    float key;
-    struct node* left;
-    struct node* right;
-    int ht;
-    int childCnt;
-} node;
-
-node* justInsert(node* root,node* nd);
-int getFactor(node* root);
-int isBalance(node* root);
-int height(node* root);
-int fixHeight(node* root);
-node* fixTree(node* root,node* proot,int isleft);
-node* LR(node* root,node* proot,int isleft);
-node* RR(node* root,node* proot,int isleft);
-node* LL(node* root,node* proot,int isleft);
-node* RL(node* root,node* proot,int isleft);
-void deleteNode(node** root,int data);
-node** getNextMinNode(node** root);
-node** getPreMaxNode(node** root);
-int isLeaf(node* root);
-int fixChildCount(node* root);
-int getMid(node* root);
-
-std::map<int,int> cntCache;
-node** getNode(node** root,int data);
-node * insert(node * root,int val)
-{
-    node* nd = new node;
-    nd->val = val;
-    nd->left = 0;
-    nd->right = 0;
-    nd->ht = 0;
-    int dupC = cntCache[val] ? cntCache[val] : 0;
-    if (dupC == 0) {
-        nd->key = val;
-    }else {
-        nd->key = val + (1.0/(dupC+1));
-    }
-    cntCache[val] = dupC + 1;
-    root = justInsert(root,nd);
-    fixHeight(root);
-    node* rt = fixTree(root,0,false);
-    return rt;
-    
-}
-
-node* justInsert(node* root,node* nd)
-{
-    if (root == 0) {
-        return nd;
-    }
-    node* cd = root;
-    node* tg = 0;
-    int isleft = 0;
-    while (cd) {
-        float val = nd->key;
-        if (val < cd->key) {
-            tg = cd;
-            isleft = 1;
-            cd = cd->left;
-        }else if(val > cd->key) {
-            tg = cd;
-            isleft = 0;
-            cd = cd->right;
-        }else {
-            delete nd;
-            return root;
-        }
-    }
-    if (isleft == 1) {
-        tg->left = nd;
-    }else {
-        tg->right = nd;
-    }
-    return root;
-}
-
-
-int getFactor(node* root)
-{
-    if (!root) return 0;
-    int fac = height(root->left) - height(root->right);
-    return fac;
-}
-
-int isBalance(node* root){
-    if (!root) {
-        return 1;
-    }
-    int fac = getFactor(root);
-    if (fac >= -1 && fac <= 1) {
-        return 1;
-    }
-    return 0;
-}
-
-int height(node* root)
-{
-    if (root==0){
-        return -1;
-    }else {
-        return root->ht;
-    }
-    
-}
-
-node* fixTree(node* root,node* proot,int isleft)
-{
-    if (!isBalance(root->left)) {
-        root->left = fixTree(root->left,root,1);
-        return root;
-    }else if(!isBalance(root->right)) {
-        root->right = fixTree(root->right,root,0);
-        return root;
-    }else if(!isBalance(root)){
-        
-        
-        if (getFactor(root) == 2 && getFactor(root->left) == -1) {
-            //LR
-            LR(root,proot,isleft);
-            return LL(root,proot,isleft);
-        }else if(getFactor(root) == 2 && getFactor(root->left) == 1) {
-            //LL
-            return LL(root,proot,isleft);
-        }else if(getFactor(root) == -2 && getFactor(root->right)== 1 ) {
-            //RL
-            RL(root,proot,isleft);
-            return RR(root,proot,isleft);
-        }else if(getFactor(root) == -2 && getFactor(root->right) == -1) {
-            //RR
-            return RR(root,proot,isleft);
-        }
-    }
-    return root;
-}
-
-int fixHeight(node* root)
-{
-    if (root == 0) {
-        return -1;
-    }else {
-        int lt = fixHeight(root->left);
-        int rt = fixHeight(root->right);
-        root->ht = lt > rt ? lt + 1: rt + 1;
-        return root->ht;
-    }
-}
-
-int fixChildCount(node* root)
-{
-    if (root == 0) {
-        return 0;
-    }else {
-        int lt = fixChildCount(root->left);
-        int rt = fixChildCount(root->right);
-        root->childCnt = lt + rt;
-        return root->childCnt + 1;
-    }
-}
-
-
-node* LR(node* root,node* proot,int isleft){
-    node* l = root->left;
-    node* lr = l->right;
-    root->left = lr;
-    l->right = lr->left;
-    lr->left = l;
-    return root;
-}
-
-node* LL(node* root,node* proot,int isleft){
-    node* l = root->left;
-    node* ll = l->left;
-    
-    root->left = l->right;
-    l->right = root;
-    if (proot) {
-        if (isleft) {
-            proot->left = l;
-        }else {
-            proot->right = l;
-        }
-    }
-    
-    return l;
-    
-}
-
-node* RL(node* root,node* proot,int isleft){
-    node* r = root->right;
-    node* rl = r->left;
-    root->right = rl;
-    r->left = rl->right;
-    rl->right = r;
-    return root;
-}
-
-node* RR(node* root,node* proot,int isleft){
-    node* r = root->right;
-    node* rr = r->right;
-    
-    root->right = r->left;
-    r->left = root;
-    if (proot) {
-        if (isleft) {
-            proot->left = r;
-        }else {
-            proot->right = r;
-        }
-    }
-    return r;
-}
-
-void deleteNode(node** root,int data)
-{
-    node** target = getNode(root,data);
-    if (!target) {
-        return;
-    }
-    if ((*target)->left && (*target)->right) {
-        node** re = getNextMinNode(target);
-        (*target)->val = (*re)->val;
-        (*target)->key = (*re)->key;
-        deleteNode(re,(*re)->val);
-    }else if ((*target)->left) {
-        if (isLeaf((*target)->left)) {
-            (*target)->val = (*target)->left->val;
-            (*target)->key = (*target)->left->key;
-            deleteNode(&((*target)->left),(*target)->left->val);
-        }else {
-            node** re = getPreMaxNode(&((*target)->left));
-            (*target)->val = (*re)->val;
-            (*target)->key = (*re)->key;
-            deleteNode(re,(*re)->val);
-        }
-        
-    }else if ((*target)->right) {
-        if (isLeaf((*target)->right)) {
-            (*target)->val = (*target)->right->val;
-            (*target)->key = (*target)->right->key;
-            deleteNode(&((*target)->right),(*target)->right->val);
-        }else {
-            node** re = getNextMinNode(&((*target)->right));
-            (*target)->val = (*re)->val;
-            (*target)->key = (*re)->key;
-            deleteNode(re,(*re)->val);
-        }
-    }else {
-        delete (*target);
-        *target = 0;
-    }
-}
-
-int isLeaf(node* root)
-{
-    return (!root->left&&!root->right);
-}
-node** getNode(node** root,int data)
-{
-    if (!(*root)) return 0;
-    node** cr = root;
-    while(*cr) {
-        if ((*cr)->val < data) {
-            cr = &((*cr)->right);
-        }else if((*cr)->val > data) {
-            cr = &((*cr)->left);
-        }else {
-            return cr;
-        }
-    }
-    return 0;
-}
-
-node** getNextMinNode(node** root)
-{
-    if (!(*root)) {
-        return 0;
-    }
-    node** cr = &((*root)->right);
-    while(*cr) {
-        if ((*cr)->left) {
-            cr = &((*cr)->left);
-        }else {
-            return cr;
-        }
-    }
-    return 0;
-}
-
-node** getPreMaxNode(node** root)
-{
-    if (!(*root)) {
-        return 0;
-    }
-    node** cr = &((*root)->left);
-    while(*cr) {
-        if ((*cr)->right) {
-            cr = &((*cr)->right);
-        }else {
-            return cr;
-        }
-    }
-    return 0;
-}
-
-int getMid(node* root){
-    fixChildCount(root);
-    if (!root) {
-        std::cout<<"Wrong!"<<std::endl;
-    }else {
-        int lc = 0;
-        int rc = 0;
-        if (root->left) {
-            lc = root->left->childCnt + 1;
-        }
-        if (root->right) {
-            rc = root->right->childCnt + 1;
-        }
-        if ((root->childCnt + 1) % 2 == 0) {
-            
-            if (lc > rc) {
-                std::cout<<(root->val + (*getPreMaxNode(&root))->val)/2.0<<std::endl;
-            } else if (lc < rc){
-                std::cout<<(root->val + (*getNextMinNode(&root))->val)/2.0<<std::endl;
-            }
-        }else {
-            if (lc > rc) {
-                std::cout<<(*getPreMaxNode(&root))->val<<std::endl;
-            } else if (lc < rc){
-                std::cout<< (*getNextMinNode(&root))->val<<std::endl;
-            } else {
-                std::cout<<root->val<<std::endl;
-            }
-            
-        }
-    }
-    return 0;
-}
-
-void opera(node** root,char op,int data)
-{
-    if (op == 'r') {
-        deleteNode(root,data);
-    }else if(op == 'a') {
-        *root = insert(*root,data);
-    }
-}
 
 void median(vector<char> s,vector<int> X) {
-    node* root = 0;
+    Tree::AVLTree<int> tree_min;
+    Tree::AVLTree<int> tree_max;
+    ios::fmtflags f(cout.flags());
     for (int i = 0; i < s.size(); i++)
     {
-        opera(&root,s[i],X[i]);
-        getMid(root);
+        bool succ = true;
+        if (s[i] == 'a') {
+            tree_max.Insert(X[i]);
+            if (tree_min.GetSize() > 0) {
+                if (tree_max.GetMin() < tree_min.GetMax()) {
+                    int m = tree_max.GetMin();
+                    tree_min.Insert(m);
+                    tree_max.Remove(m);
+                }
+            }
+        }else if(s[i] == 'r') {
+            succ = tree_max.Remove(X[i]);
+            if (!succ) {
+                succ = tree_min.Remove(X[i]);
+            }
+        }
+
+        if (tree_max.GetSize() - tree_min.GetSize() >= 2) {
+            //move max min to min max
+            int m = tree_max.GetMin();
+            tree_min.Insert(m);
+            tree_max.Remove(m);
+        }else if (tree_max.GetSize() - tree_min.GetSize() <= -2) {
+            int m = tree_min.GetMax();
+            tree_min.Remove(m);
+            tree_max.Insert(m);
+        }
+
+        int cnt = tree_min.GetSize() + tree_max.GetSize();
+        if (cnt <= 0 || !succ){
+            std::cout.flags(f);
+            std::cout<<"Wrong!"<<std::endl;
+        }else {
+            if (tree_min.GetSize() ==  tree_max.GetSize()) {
+                double res = ((double)tree_min.GetMax() + tree_max.GetMin())/2.0;
+                if ( int(res) == res) {
+                    printf("%.lf\n",res);
+                }else {
+                    printf("%0.1lf\n",res);
+                }
+                
+            }else {
+                double res = tree_min.GetSize() > tree_max.GetSize() ? tree_min.GetMax() : tree_max.GetMin();
+                printf("%0.lf\n",res);
+            }
+        }
     }
-    
 }
 int main(void){
     
